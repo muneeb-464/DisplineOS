@@ -257,15 +257,15 @@ export const computeDayScore = (date: string): DayScore => {
     const hours = (b.endMin - b.startMin) / 60;
     if (cat.type === "productive") {
       productiveHours += hours;
-      let pts = hours * (cat.pointsPerHour || settings.productiveRate);
+      let pts = hours * (cat.pointsPerHour ?? settings.productiveRate);
       if (cat.isDeepWork) pts *= settings.deepWorkMultiplier;
       productive += pts;
     } else if (cat.type === "routine") {
       routineHours += hours;
-      routine += hours * (cat.pointsPerHour || 0);
+      routine += hours * (cat.pointsPerHour ?? 0);
     } else {
       wastedHours += hours;
-      wasted -= hours * (cat.pointsPerHour || settings.wastedRate);
+      wasted -= hours * (cat.pointsPerHour ?? settings.wastedRate);
     }
   }
 
