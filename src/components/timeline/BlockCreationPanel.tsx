@@ -33,16 +33,18 @@ const TYPES: { v: CategoryType; label: string }[] = [
 export default function BlockCreationPanel({
   open, onOpenChange, date, kind, initialStartMin = 9 * 60, editing, presetSubCategoryId,
 }: Props) {
-  const { categories, addBlock, updateBlock, deleteBlock, addCategory, pushRecentSub } = useStore();
+  const { categories, blocks: allBlocks, addBlock, updateBlock, deleteBlock, addCategory, pushRecentSub } = useStore();
   const [type, setType] = useState<CategoryType>("productive");
   const [subId, setSubId] = useState<string>("");
   const [start, setStart] = useState(minutesToLabel(initialStartMin));
   const [end, setEnd] = useState(minutesToLabel(initialStartMin + 60));
   const [newSubName, setNewSubName] = useState("");
+  const [overlapError, setOverlapError] = useState(false);
+  const [overlappingBlocks, setOverlappingBlocks] = useState<typeof allBlocks>([]);
 
   const isPast = date < todayISO();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | "merge" | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -92,12 +94,44 @@ export default function BlockCreationPanel({
     const endMin = labelToMinutes(end);
     const hasSub = subId || newSubName.trim();
     if (!hasSub || endMin <= startMin) return;
+
+    // Check for overlap with existing blocks on the same date and kind
+    const siblings = allBlocks.filter(
+      (b) => b.date === date && b.kind === kind && (!editing || b.id !== editing.id)
+    );
+    const overlaps = siblings.filter((b) => b.startMin < endMin && b.endMin > startMin);
+    if (overlaps.length > 0) { setOverlapError(true); setOverlappingBlocks(overlaps); return; }
+    setOverlapError(false);
+    setOverlappingBlocks([]);
+
     if (isPast) {
       setPendingAction("save");
       setConfirmOpen(true);
     } else {
       executeSave();
     }
+  };
+
+  const executeMerge = () => {
+    let finalSubId = subId;
+    if (!finalSubId && newSubName.trim()) {
+      const id = "c-" + uid();
+      addCategory({ name: newSubName.trim(), type, pointsPerHour: type === "wasted" ? 2 : 2 } as any);
+      finalSubId = useStore.getState().categories.find((c) => c.name === newSubName.trim())?.id || id;
+    }
+    if (!finalSubId) return;
+    const startMin = Math.min(labelToMinutes(start), ...overlappingBlocks.map((b) => b.startMin));
+    const endMin = Math.max(labelToMinutes(end), ...overlappingBlocks.map((b) => b.endMin));
+    overlappingBlocks.forEach((b) => deleteBlock(b.id));
+    if (editing) {
+      updateBlock(editing.id, { subCategoryId: finalSubId, startMin, endMin });
+    } else {
+      addBlock({ date, subCategoryId: finalSubId, startMin, endMin, kind });
+    }
+    pushRecentSub(finalSubId);
+    setOverlapError(false);
+    setOverlappingBlocks([]);
+    onOpenChange(false);
   };
 
   const executeDelete = () => {
@@ -113,6 +147,7 @@ export default function BlockCreationPanel({
   const handleConfirm = () => {
     setConfirmOpen(false);
     if (pendingAction === "save") executeSave();
+    else if (pendingAction === "merge") executeMerge();
     else if (pendingAction === "delete") executeDelete();
     setPendingAction(null);
   };
@@ -183,6 +218,27 @@ export default function BlockCreationPanel({
                 <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className="bg-surface-2 border-border mt-2" />
               </div>
             </div>
+
+            {overlapError && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 space-y-2">
+                <p className="text-xs text-destructive">
+                  This block overlaps with {overlappingBlocks.length} existing block{overlappingBlocks.length > 1 ? "s" : ""}.
+                  Adjust the time or merge them into one.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={isPast ? () => { setPendingAction("merge"); setConfirmOpen(true); } : executeMerge}
+                  className="w-full border-destructive/40 text-destructive hover:bg-destructive/20 text-xs"
+                >
+                  Merge into one block (
+                  {minutesToLabel(Math.min(labelToMinutes(start), ...overlappingBlocks.map((b) => b.startMin)))}
+                  {" – "}
+                  {minutesToLabel(Math.max(labelToMinutes(end), ...overlappingBlocks.map((b) => b.endMin)))}
+                  )
+                </Button>
+              </div>
+            )}
 
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSave} className="flex-1 bg-primary text-primary-foreground hover:bg-primary-glow">

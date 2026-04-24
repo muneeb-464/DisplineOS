@@ -114,6 +114,7 @@ function RangeView({
   const barData = report.dayScores.map((day) => ({
     day: format(parseISODateLocal(day.date), dates.length > 15 ? "d MMM" : "EEE"),
     Productive: +day.productiveHours.toFixed(1),
+    Routine: +day.routineHours.toFixed(1),
     Wasted: +day.wastedHours.toFixed(1),
   }));
 
@@ -170,9 +171,21 @@ function RangeView({
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="flex flex-col gap-5">
         <div className="surface-card p-4 sm:p-6">
-          <h3 className="mb-4 font-display text-xl font-bold">Daily hours</h3>
+          <h3 className="mb-3 font-display text-xl font-bold">Daily hours</h3>
+          <div className="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
+            {[
+              { label: "Productive", color: "hsl(var(--cat-productive))" },
+              { label: "Routine",    color: "hsl(var(--cat-routine))" },
+              { label: "Wasted",     color: "hsl(var(--cat-wasted))" },
+            ].map(({ label, color }) => (
+              <span key={label} className="flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: color }} />
+                {label}
+              </span>
+            ))}
+          </div>
           <div className="h-72">
             <ResponsiveContainer>
               <BarChart data={barData}>
@@ -180,11 +193,13 @@ function RangeView({
                 <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip
-                  cursor={{ fill: "transparent" }}
-                  contentStyle={{ background: "hsl(var(--surface-2))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                  cursor={{ fill: "hsl(var(--surface-3) / 0.4)" }}
+                  contentStyle={{ background: "hsl(var(--surface-2))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" }}
+                  itemStyle={{ color: "hsl(var(--foreground))" }}
                 />
-                <Bar dataKey="Productive" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Wasted" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Productive" fill="hsl(var(--cat-productive))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Routine"    fill="hsl(var(--cat-routine))"    radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Wasted"     fill="hsl(var(--cat-wasted))"     radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -195,16 +210,38 @@ function RangeView({
           {report.breakdown.length === 0 ? (
             <p className="text-sm text-muted-foreground">No tracked time in this range yet.</p>
           ) : (
-            <div className="h-72">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={report.breakdown} dataKey="hours" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}>
-                    {report.breakdown.map((_, index) => <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: "hsl(var(--surface-2))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="flex flex-col gap-4">
+              <div className="h-56">
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={report.breakdown} dataKey="hours" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={2}>
+                      {report.breakdown.map((_, index) => <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--surface-2))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        color: "hsl(var(--foreground))",
+                      }}
+                      itemStyle={{ color: "hsl(var(--foreground))" }}
+                      formatter={(value: number, name: string) => [`${value.toFixed(1)}h`, name]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {report.breakdown.map((item, index) => (
+                  <div key={item.id} className="flex items-center gap-3 rounded-lg bg-surface-2 px-3 py-2">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.name}</span>
+                    <span className="shrink-0 font-mono text-xs text-muted-foreground">{item.hours.toFixed(1)}h</span>
+                    <span className="shrink-0 font-mono text-xs text-primary">
+                      {((item.hours / totalBreakdownHours) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
