@@ -96,7 +96,7 @@ export default function Planner() {
 
             {blocks.length === 0 && (
               <div className="surface-card p-8 mb-6 text-center">
-                <p className="text-muted-foreground">No blocks yet. Click an empty hour or “+ Add Block” to start architecting your day.</p>
+                <p className="text-muted-foreground">No blocks yet. Click an empty hour or "+ Add Block" to start architecting your day.</p>
               </div>
             )}
 
@@ -117,7 +117,7 @@ export default function Planner() {
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Today’s Summary</p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Today's Summary</p>
           </div>
 
           <div className="surface-card p-5">

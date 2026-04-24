@@ -60,13 +60,31 @@ app.use("/api", dataRoutes);
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => {
-    console.error("MongoDB connection failed:", err.message);
+let mongoConnected = false;
+async function connectMongo() {
+  if (mongoConnected || mongoose.connection.readyState === 1) return;
+  await mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
   });
+  mongoConnected = true;
+}
+
+// Vercel serverless — export app and connect on each cold start
+if (process.env.VERCEL) {
+  module.exports = async (req, res) => {
+    await connectMongo();
+    app(req, res);
+  };
+} else {
+  // Local dev — connect then listen
+  connectMongo()
+    .then(() => {
+      console.log("MongoDB connected");
+      app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    })
+    .catch((err) => {
+      console.error("MongoDB connection failed:", err.message);
+      process.exit(1);
+    });
+}
