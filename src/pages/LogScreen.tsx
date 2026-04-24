@@ -1,0 +1,155 @@
+import { useEffect, useMemo, useState } from "react";
+import Timeline from "@/components/timeline/Timeline";
+import BlockCreationPanel from "@/components/timeline/BlockCreationPanel";
+import { useDayScore, useStore } from "@/lib/store";
+import { TimeBlock } from "@/lib/types";
+import { formatDateLong, isoFromDate, parseISODateLocal, todayISO } from "@/lib/utils";
+import NamazTracker from "@/components/NamazTracker";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export default function LogScreen() {
+  const today = todayISO();
+  const [date, setDate] = useState<string>(today);
+  const [dateOpen, setDateOpen] = useState(false);
+  const isToday = date === today;
+
+  const blocks = useStore((s) => s.blocks);
+  const categories = useStore((s) => s.categories);
+  const recent = useStore((s) => s.recentSubCategoryIds);
+  const score = useDayScore(date);
+
+  const startedDays = useStore((s) => s.startedDays);
+  const dayStarted = startedDays.includes(date);
+
+  const planned = blocks.filter((b) => b.date === date && b.kind === "planned");
+  const logged = blocks.filter((b) => b.date === date && b.kind === "logged");
+
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [editing, setEditing] = useState<TimeBlock | null>(null);
+  const [initStart, setInitStart] = useState(9 * 60);
+  const [presetSub, setPresetSub] = useState<string | null>(null);
+
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const recentChips = useMemo(() => {
+    const ids = recent.length ? recent : categories.slice(0, 5).map((c) => c.id);
+    return ids
+      .map((id) => categories.find((c) => c.id === id))
+      .filter(Boolean)
+      .slice(0, 5) as typeof categories;
+  }, [recent, categories]);
+
+  return (
+    <>
+      <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="flex items-center gap-4">
+            {isToday ? (
+              <>
+                <span className="font-display text-3xl font-bold tabular-nums">
+                  {time.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}
+                </span>
+                <span className="chip"><span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Live tracking</span>
+              </>
+            ) : (
+              <>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">Log Phase</p>
+                <h1 className="font-display text-2xl mt-0">{formatDateLong(date)}</h1>
+                <span className="chip border-amber-500/40 text-amber-400">Past date</span>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Popover open={dateOpen} onOpenChange={setDateOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("border-border bg-surface-2 hover:bg-surface-3 text-sm", !isToday && "text-primary border-primary/40")}>
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {isToday ? "Today" : formatDateLong(date)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-surface-1 border-border" align="end">
+                <Calendar
+                  mode="single"
+                  selected={parseISODateLocal(date)}
+                  onSelect={(d) => {
+                    if (d) { setDate(isoFromDate(d)); setDateOpen(false); }
+                  }}
+                  disabled={(d) => isoFromDate(d) > today}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            {!isToday && (
+              <Button variant="ghost" onClick={() => setDate(today)} className="text-xs">Jump to Today</Button>
+            )}
+            <div className="surface-card px-5 py-2.5">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground mr-3">
+                {isToday ? "Today" : "Score"}
+              </span>
+              <span className="font-display text-2xl font-bold text-primary">
+                {score.isStarted ? `+${score.total.toLocaleString()} pts` : "—"}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Quick chips — only show for today */}
+        {isToday && (
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground mr-2">Quick log</span>
+            {recentChips.length === 0 ? (
+              <span className="text-sm text-muted-foreground">Create categories in Settings to enable quick chips.</span>
+            ) : recentChips.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => { setEditing(null); setPresetSub(c.id); setInitStart(Math.floor((time.getHours() * 60 + time.getMinutes()) / 30) * 30); setPanelOpen(true); }}
+                className="chip hover:bg-primary hover:text-primary-foreground transition"
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Namaz row */}
+        <div className="surface-card p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              Namaz {isToday ? "today" : formatDateLong(date)}
+            </p>
+            <p className="text-xs text-muted-foreground">{score.namazCompleted}/5 completed</p>
+          </div>
+          <NamazTracker date={date} isStarted={dayStarted} />
+        </div>
+
+        <Timeline
+          date={date}
+          blocks={logged}
+          ghostBlocks={planned}
+          isToday={isToday}
+          onSlotClick={(min) => { setEditing(null); setPresetSub(null); setInitStart(min); setPanelOpen(true); }}
+          onBlockClick={(b) => { setEditing(b); setPanelOpen(true); }}
+        />
+      </div>
+
+      <BlockCreationPanel
+        open={panelOpen}
+        onOpenChange={(o) => { setPanelOpen(o); if (!o) setPresetSub(null); }}
+        date={date}
+        kind="logged"
+        initialStartMin={initStart}
+        editing={editing}
+        presetSubCategoryId={presetSub}
+      />
+    </>
+  );
+}

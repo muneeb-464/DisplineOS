@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DisciplineOS — olive-green accent, warm light mode, dark mode unchanged. */
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* Canvas — warm near-white (#fbf9f9) */
+    --background: 0 7% 98%;
+    --foreground: 0 0% 7%;          /* #121212 secondary */
+
+    /* Cards use tertiary #F4F4F4 */
+    --card: 0 0% 96%;
+    --card-foreground: 0 0% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+
+    /* Primary — electric lime #E6F8A2, dark text on top */
+    --primary: 73 86% 80%;
+    --primary-foreground: 0 0% 7%;
+    --primary-glow: 73 86% 70%;
+
+    /* Secondary — near-black #121212 */
+    --secondary: 0 0% 7%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted */
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 44%;   /* #707070 neutral */
+
+    /* Accent — soft lime tint for active chip backgrounds */
+    --accent: 73 70% 92%;
+    --accent-foreground: 0 0% 7%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 85%;
+    --input: 0 0% 100%;
+    --ring: 73 86% 65%;
+
+    --radius: 1rem;
+
+    /* Category colors — visible on light surfaces */
+    --cat-productive: 80 55% 38%;   /* deep olive-lime, #72962c-ish */
+    --cat-routine: 0 0% 44%;        /* #707070 neutral */
+    --cat-wasted: 0 72% 50%;
+
+    /* Surface tiers */
+    --surface-1: 0 0% 100%;         /* pure white */
+    --surface-2: 0 0% 96%;          /* #F4F4F4 tertiary */
+    --surface-3: 0 0% 90%;
+
+    --shadow-glow: 0 0 24px hsl(73 86% 70% / 0.25);
+    --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.06), 0 4px 16px hsl(0 0% 0% / 0.04);
+
+    /* Sidebar stays dark (matches Sidebar.tsx hardcoded dark styles) */
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 65%;
+    --sidebar-primary: 73 86% 80%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 73 86% 80%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 73 86% 80%;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: 0 0% 6%;
+    --foreground: 120 4% 92%;
+
+    --card: 0 0% 9%;
+    --card-foreground: 120 4% 92%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 120 4% 92%;
+
+    --primary: 71 88% 84%;
+    --primary-foreground: 0 0% 6%;
+    --primary-glow: 71 88% 78%;
+
+    --secondary: 73 17% 48%;
+    --secondary-foreground: 0 0% 6%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 73 17% 24%;
+    --accent-foreground: 71 88% 84%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 14%;
+    --ring: 71 88% 84%;
+
+    --cat-productive: 71 88% 84%;
+    --cat-routine: 73 17% 48%;
+    --cat-wasted: 0 70% 55%;
+
+    --surface-1: 0 0% 9%;
+    --surface-2: 0 0% 12%;
+    --surface-3: 0 0% 16%;
+
+    --shadow-glow: 0 0 24px hsl(var(--primary) / 0.35);
+    --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.03) inset, 0 8px 24px hsl(0 0% 0% / 0.4);
+
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 70%;
+    --sidebar-primary: 71 88% 84%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 71 88% 84%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 71 88% 84%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: 0; }
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-2xl border border-border;
+    background: hsl(var(--surface-1));
+    box-shadow: var(--shadow-card);
+  }
+  .surface-soft {
+    @apply rounded-xl;
+    background: hsl(var(--surface-2));
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
+    background: hsl(var(--surface-3));
+    color: hsl(var(--foreground));
+  }
+  .chip-primary {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+  .now-line {
+    @apply absolute left-0 right-0 h-px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 12px hsl(var(--primary) / 0.8);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5); }
+  50% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
+}
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
