@@ -223,22 +223,41 @@ function PointsSection() {
     { k: "dailyTargetPenalty", label: "Daily target penalty (pts)" },
     { k: "deepWorkMultiplier", label: "Deep work multiplier" },
   ];
+
+  const [pending, setPending] = useState<Record<string, number>>(
+    () => Object.fromEntries(fields.map((f) => [f.k, settings[f.k] as number]))
+  );
+  const isDirty = fields.some((f) => pending[f.k] !== (settings[f.k] as number));
+
+  const save = () => {
+    updateSettings(pending as any);
+    toast.success("Settings saved successfully.");
+  };
+
   return (
     <div>
-      <h2 className="font-display text-3xl font-bold mb-6">Points System</h2>
-      <div className="grid sm:grid-cols-2 gap-4">
+      <h2 className="font-display text-3xl font-bold mb-2">Points System</h2>
+      <p className="text-sm text-muted-foreground mb-6">Changes are pending until you click Save.</p>
+      <div className="grid sm:grid-cols-2 gap-4 mb-6">
         {fields.map((f) => (
-          <div key={f.k} className="surface-card p-5">
+          <div key={f.k} className={cn("surface-card p-5 transition", pending[f.k] !== (settings[f.k] as number) && "ring-1 ring-primary/40")}>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">{f.label}</Label>
             <Input
               type="number"
-              value={settings[f.k] as number}
-              onChange={(e) => updateSettings({ [f.k]: +e.target.value } as any)}
+              value={pending[f.k]}
+              onChange={(e) => setPending((p) => ({ ...p, [f.k]: +e.target.value }))}
               className="mt-2 bg-surface-2 border-border font-display text-2xl h-14"
             />
           </div>
         ))}
       </div>
+      <Button
+        onClick={save}
+        disabled={!isDirty}
+        className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary-glow disabled:opacity-40"
+      >
+        Save settings
+      </Button>
     </div>
   );
 }

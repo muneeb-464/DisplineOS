@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "next-themes";
+import { Sun, Moon } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: Calendar, label: "Plan" },
@@ -23,6 +25,8 @@ function isActive(to: string, pathname: string) {
 export default function Sidebar() {
   const { pathname } = useLocation();
   const { user, isLoggedIn, signInWithGoogle, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -183,7 +187,16 @@ export default function Sidebar() {
           );
         })}
 
-        {/* Account / sign-in as 6th slot */}
+        {/* Theme toggle */}
+        <button
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          className="flex flex-col items-center justify-center gap-[3px] flex-1 h-full py-2 transition-colors duration-150 text-white/35 hover:text-white/80"
+        >
+          {isDark ? <Sun className="h-[18px] w-[18px] shrink-0" /> : <Moon className="h-[18px] w-[18px] shrink-0" />}
+          <span className="text-[9px] font-medium leading-none">Theme</span>
+        </button>
+
+        {/* Account / sign-in as 7th slot */}
         {isLoggedIn && user ? (
           <NavLink
             to="/settings"
